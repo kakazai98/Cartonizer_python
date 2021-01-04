@@ -1,0 +1,40 @@
+import cv2
+
+class Cartoonizer:
+    def render(self, img_rgb):
+        img_rgb = cv2.imread(img_rgb)
+        numDownSamples = 1     # number of downscaling steps        
+        # -- STEP 1 --
+        # downsample image using Gaussian pyramid
+        img_color = img_rgb
+        for _ in range(numDownSamples):
+            img_color = cv2.pyrDown(img_color)
+        cv2.imwrite("downscale.jpg",img_color)       
+        
+        # upsample image to original size
+        for _ in range(numDownSamples):
+            img_color = cv2.pyrUp(img_color)
+        cv2.imwrite("upscaling.jpg",img_color)
+                
+        # -- STEPS 2 and 3 --
+        # convert to grayscale and apply median blur
+        img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+        img_blur = cv2.medianBlur(img_gray, 3)
+               
+        # -- STEP 4 --
+        # detect and enhance edges
+        img_edge = cv2.adaptiveThreshold(img_blur, 255,
+                                         cv2.ADAPTIVE_THRESH_MEAN_C,
+                                         cv2.THRESH_BINARY, 11, 3)
+        
+        # -- STEP 5 --
+        # convert back to color so that it can be bit-ANDed with color image  
+        img_edge = cv2.cvtColor(img_edge, cv2.COLOR_GRAY2RGB)
+        cv2.imwrite("edge.png",img_edge)
+        
+        return cv2.bitwise_and(img_color, img_edge)
+
+canvas = Cartoonizer()
+file_name = "0.jpg" #File_name will come here
+resource = canvas.render(file_name)
+cv2.imwrite("Cartoon version.jpg", resource)
